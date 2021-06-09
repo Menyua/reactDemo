@@ -1,25 +1,58 @@
 import React, { Component } from 'react'
 
-import { Form, Input, Button, Checkbox } from 'antd';
+import { Form, Input, Button, Checkbox, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { reqLogin } from '../../api'
 
 import './login.less'
-import logo from './images/logo.png'
+import logo from '../../assets/images/logo.png'
+import memoryUtils from '../../utils/memoryUtils'
+import storageUtils from '../../utils/storageUtils'
+import { Redirect } from 'react-router-dom';
 
 export default class Login extends Component {
 
 
     // 该方法是校验通过了才会执行
-    onFinish = (values) => {
+    onFinish = async (values) => {
 
-        console.log('回调函数参数值：', values);
+        // console.log('回调函数参数值：', values);
 
         // 获取强大功能的form对象 antd 4 不再流行
         // const form = this.props.form
+        // console.log(this.props)
 
-        console.log(this.props)
+        const {username, password} = values
         
-        return Promise.resolve('发送ajax请求')
+        // reqLogin(username, password).then(response => {
+        //     const { data } = response
+        //     console.log(response)
+        //     if (data.status === 0) {
+        //         message.success('登录成功啦！(*^_^*)')
+        //     } else {
+        //         message.error(data.msg)
+        //     }
+        // }).catch(err => {
+        //     message.error('啊哦，出错了！/(ㄒoㄒ)/~~')
+        //     console.log(err)
+        // })
+
+
+        const result = await reqLogin(username, password)
+        if (result.status === 0) {
+            message.success('登录成功啦！(*^_^*)')
+            // 保存user到内存
+            memoryUtils.user = result.data
+            storageUtils.saveUser(result.data)
+
+            // 跳转到管理界面
+            this.props.history.replace('/')
+        } else {
+            message.error(result.msg)
+        }
+
+
+
     }
 
 
@@ -44,6 +77,13 @@ export default class Login extends Component {
     }
 
     render() {
+        // 如果用户已经登录，跳转到/界面
+        const user = memoryUtils.user
+        
+        if (user && user._id) {
+            return <Redirect to='/' />
+        }
+
         return (
             <div className="login">
                 <header className="login-header">
@@ -60,6 +100,7 @@ export default class Login extends Component {
                     >
                         <Form.Item
                             name="username"
+                            initialValue="admin"
                             rules={[
                                 { required: true, message: '请输入你的用户名' },
                                 { min: 4, message: '用户名最少4位' },
